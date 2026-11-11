@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flagstone Review Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== Design tokens — see DESIGN.md ===== */
+:root{
+  --bg:#f6f2e8; --surface:#fffdf8; --surface-2:#eee8d9; --border:#ded5bd;
+  --ink:#201d17; --ink-muted:#6e6554;
+  --primary:#2f4a3d; --primary-ink:#f6f2e8;
+  --severity-high:#8c2f2f; --severity-med:#a67c1d; --severity-low:#6e6554;
+  --success:#3d6b4f;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:14px;
+  --shadow-float: 0 1px 2px rgba(0,0,0,.05), 0 4px 12px rgba(0,0,0,.06);
+  --font-display:'Source Serif 4', Georgia, serif;
+  --font-body:'Inter', system-ui, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+:root[data-theme="dark"]{
+  --bg:#15181a; --surface:#1d2123; --surface-2:#262b2e; --border:#343b3e;
+  --ink:#e8e5dc; --ink-muted:#9aa1a0;
+  --primary:#7fae93; --primary-ink:#0d1210;
+  --severity-high:#e08787; --severity-med:#e0b84a; --severity-low:#9aa1a0;
+  --success:#7fc9a3;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181a; --surface:#1d2123; --surface-2:#262b2e; --border:#343b3e;
+    --ink:#e8e5dc; --ink-muted:#9aa1a0;
+    --primary:#7fae93; --primary-ink:#0d1210;
+    --severity-high:#e08787; --severity-med:#e0b84a; --severity-low:#9aa1a0;
+    --success:#7fc9a3;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-body);
+  font-size:14.5px; line-height:1.55; overflow:hidden;
+}
+button{font-family:inherit;}
+::selection{background:var(--primary); color:var(--primary-ink);}
+
+.app{display:flex; height:100dvh; width:100%;}
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  width:272px; flex:none; background:var(--surface-2); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; padding:20px 18px; gap:18px; overflow-y:auto;
+}
+@media (max-width:760px){
+  .sidebar{position:fixed; inset:0 auto 0 0; z-index:20; transform:translateX(-100%); transition:transform .2s ease; box-shadow:var(--shadow-float);}
+  .sidebar.open{transform:translateX(0);}
+  .scrim{position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:19; display:none;}
+  .scrim.show{display:block;}
+}
+.brand-row{display:flex; align-items:center; justify-content:space-between;}
+.brand{display:flex; align-items:baseline; gap:8px;}
+.brand .word{font-family:var(--font-display); font-weight:700; font-size:19px;}
+.brand .tag{font-size:11px; color:var(--ink-muted); letter-spacing:.03em;}
+.icon-btn{
+  width:32px; height:32px; border-radius:var(--radius-sm); border:1px solid var(--border);
+  background:var(--surface); color:var(--ink-muted); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex:none;
+}
+.icon-btn:hover{color:var(--ink); border-color:var(--primary);}
+.icon-btn svg{width:17px; height:17px;}
+
+.field label{display:block; font-size:11.5px; font-weight:600; color:var(--ink-muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em;}
+.field + .field{margin-top:14px;}
+input[type=password], input[type=text], select, textarea{
+  width:100%; background:var(--surface); border:1px solid var(--border); color:var(--ink);
+  border-radius:var(--radius-sm); padding:9px 10px; font-size:13.5px; font-family:inherit;
+}
+input:focus, select:focus, textarea:focus{outline:2px solid var(--primary); outline-offset:1px; border-color:var(--primary);}
+.remember{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-muted); margin-top:6px; font-weight:400;}
+.remember input{width:auto;}
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  font-size:13.5px; font-weight:600; border-radius:var(--radius-sm); padding:9px 14px;
+  border:1px solid var(--primary); background:var(--primary); color:var(--primary-ink); cursor:pointer;
+}
+.btn:hover{filter:brightness(1.06);}
+.btn:disabled{opacity:.5; cursor:default;}
+.btn.secondary{background:transparent; color:var(--ink); border-color:var(--border);}
+.btn.secondary:hover{border-color:var(--primary); color:var(--primary);}
+.btn.block{width:100%;}
+.btn:focus-visible{outline:2px solid var(--primary); outline-offset:2px;}
+
+.sidebar-divider{height:1px; background:var(--border); margin:2px 0;}
+.sidebar h3{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); margin:0 0 8px;}
+.history-list{display:flex; flex-direction:column; gap:6px; overflow-y:auto;}
+.history-item{
+  border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px; cursor:pointer;
+  background:var(--surface); font-size:12.5px; line-height:1.4;
+}
+.history-item:hover{border-color:var(--primary);}
+.history-item .h-top{display:flex; justify-content:space-between; gap:6px; font-weight:600;}
+.history-item .h-sub{color:var(--ink-muted); font-size:11px; margin-top:2px;}
+.history-empty{color:var(--ink-muted); font-size:12.5px;}
+
+/* ---------- Main column ---------- */
+.main{flex:1; display:flex; flex-direction:column; min-width:0; height:100dvh;}
+.topbar{
+  display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid var(--border);
+  flex:none;
+}
+.menu-btn{display:none;}
+@media (max-width:760px){ .menu-btn{display:flex;} }
+.topbar .notice{
+  font-size:12px; color:var(--ink-muted); background:var(--surface-2); border:1px solid var(--border);
+  border-radius:999px; padding:5px 12px;
+}
+
+.thread{flex:1; overflow-y:auto; padding:28px 20px 10px;}
+.thread-inner{max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:18px;}
+
+.empty-state{max-width:520px; margin:60px auto; text-align:center; color:var(--ink-muted);}
+.empty-state .es-icon{width:40px; height:40px; margin:0 auto 14px; color:var(--primary);}
+.empty-state h2{font-family:var(--font-display); font-size:20px; color:var(--ink); margin:0 0 8px;}
+.empty-state p{font-size:13.5px; margin:0;}
+
+.msg-row{display:flex; width:100%;}
+.msg-row.user{justify-content:flex-end;}
+.msg-row.model{justify-content:flex-start;}
+.bubble{
+  max-width:88%; border-radius:var(--radius-md); padding:12px 15px; font-size:14px; line-height:1.6;
+}
+.bubble.user{background:var(--surface-2); color:var(--ink); border-bottom-right-radius:4px;}
+.bubble.model{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--primary); border-top-left-radius:4px;}
+
+.doc-chip{
+  display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-muted);
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:6px 10px; margin-bottom:8px;
+}
+.doc-chip svg{width:14px; height:14px; flex:none;}
+.doc-preview{white-space:pre-wrap; word-break:break-word; font-family:var(--font-mono); font-size:12px;
+  max-height:0; overflow:hidden; transition:max-height .15s ease; color:var(--ink-muted);}
+.doc-preview.expanded{max-height:400px; overflow-y:auto;}
+.doc-toggle{font-size:11.5px; color:var(--primary); cursor:pointer; text-decoration:underline; background:none; border:none; padding:0; margin-top:4px; font-family:inherit;}
+
+.msg-text{white-space:pre-wrap; word-break:break-word;}
+.msg-text h3{font-family:var(--font-display); font-size:14.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--primary); margin:14px 0 6px;}
+.msg-text h3:first-child{margin-top:0;}
+.msg-text ul{margin:4px 0 10px; padding-left:20px;}
+.msg-text li{margin-bottom:4px;}
+.msg-text strong{font-weight:650;}
+.quote{font-family:var(--font-mono); font-size:12.5px; background:var(--surface-2); padding:1px 4px; border-radius:4px; box-decoration-break:clone; -webkit-box-decoration-break:clone;}
+.sev{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; padding:2px 8px; border-radius:999px;}
+.sev-high{background:color-mix(in srgb, var(--severity-high) 16%, transparent); color:var(--severity-high);}
+.sev-medium{background:color-mix(in srgb, var(--severity-med) 16%, transparent); color:var(--severity-med);}
+.sev-low{background:color-mix(in srgb, var(--severity-low) 16%, transparent); color:var(--severity-low);}
+
+.typing{display:flex; gap:4px; padding:4px 0;}
+.typing span{width:6px; height:6px; border-radius:50%; background:var(--ink-muted); animation:bounce 1.2s infinite ease-in-out;}
+.typing span:nth-child(2){animation-delay:.15s;}
+.typing span:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0); opacity:.5;} 40%{transform:translateY(-4px); opacity:1;}}
+
+.meta-line{font-size:11px; color:var(--ink-muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border);}
+.err-text{color:var(--severity-high); font-size:13px;}
+
+/* ---------- Composer ---------- */
+.composer-wrap{flex:none; padding:14px 20px 18px;}
+.composer{
+  max-width:720px; margin:0 auto; background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-lg); box-shadow:var(--shadow-float); padding:10px 10px 10px 14px;
+}
+.composer-chip-row{display:none; padding:0 0 8px;}
+.composer-chip-row.show{display:block;}
+.composer-row{display:flex; align-items:flex-end; gap:8px;}
+.composer textarea{
+  flex:1; border:none; background:transparent; resize:none; max-height:160px; min-height:24px;
+  padding:6px 4px; font-size:14.5px; line-height:1.5;
+}
+.composer textarea:focus{outline:none;}
+.composer .icon-btn{width:34px; height:34px; border:none; background:transparent;}
+.composer .send-btn{
+  width:34px; height:34px; border-radius:50%; background:var(--primary); color:var(--primary-ink);
+  border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;
+}
+.composer .send-btn:disabled{opacity:.4; cursor:default;}
+.composer .send-btn svg{width:16px; height:16px;}
+.hint-row{max-width:720px; margin:6px auto 0; font-size:11px; color:var(--ink-muted); text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="scrim" id="scrim"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-row">
+      <div class="brand">
+        <span class="word">Flagstone</span>
+        <span class="tag">Review Bench</span>
+      </div>
+      <button class="icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
+      </button>
+    </div>
+
+    <div class="field">
+      <label for="accessCode">Access code</label>
+      <input type="password" id="accessCode" placeholder="Ask Zac for the access code" autocomplete="off">
+      <div class="remember"><input type="checkbox" id="rememberCode"> Remember on this device</div>
+    </div>
+
+    <div class="field">
+      <label for="docType">Document type</label>
+      <select id="docType"></select>
+    </div>
+
+    <button class="btn block" id="newChatBtn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      New review
+    </button>
+
+    <div class="sidebar-divider"></div>
+
+    <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+      <h3>Recent (this device)</h3>
+      <div class="history-list" id="historyList"><div class="history-empty">No reviews yet.</div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <span class="notice">Internal test build &mdash; unvalidated, not legal advice</span>
+    </div>
+
+    <div class="thread" id="thread">
+      <div class="thread-inner" id="threadInner">
+        <div class="empty-state" id="emptyState">
+          <svg class="es-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h5"/></svg>
+          <h2>Start a review</h2>
+          <p>Pick a document type on the left, then paste or attach a document below. Ask follow-up questions afterwards &mdash; it's a conversation.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <div class="composer-chip-row" id="chipRow"></div>
+        <div class="composer-row">
+          <button class="icon-btn" id="attachBtn" title="Attach a .txt file" aria-label="Attach file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21.4 11.4 12.3 20.5a4.5 4.5 0 0 1-6.4-6.4l9-9a3 3 0 0 1 4.3 4.3l-8.9 8.9a1.5 1.5 0 0 1-2.1-2.1l8-8"/></svg>
+          </button>
+          <input type="file" id="fileInput" accept=".txt" style="display:none;">
+          <textarea id="composerInput" rows="1" placeholder="Paste or attach a document to begin..."></textarea>
+          <button class="send-btn" id="sendBtn" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12 20 4l-7 16-2.5-7L4 12Z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="hint-row">Your access code and document text go to a server-side function, never to a third party other than the model itself.</div>
+    </div>
+  </main>
+</div>
+
+<script>
+const LABELS = {"commercial-lease": "Commercial Lease", "employment-contract": "Employment Contract", "supply-vendor-agreement": "Supply / Vendor Agreement", "non-disclosure-agreement": "Non-Disclosure Agreement", "loan-finance-agreement": "Loan / Finance Agreement", "business-sale-agreement": "Business Sale Agreement", "contract-for-sale-of-land": "Contract for Sale of Land", "shareholder-partnership-agreement": "Shareholder / Partnership Agreement", "professional-services-agreement": "Professional Services Agreement", "deed-of-settlement-and-release": "Deed of Settlement and Release", "construction-contract": "Construction / Building Contract"};
+
+/* ---------- Setup: doc type dropdown ---------- */
+const docTypeSelect = document.getElementById('docType');
+Object.keys(LABELS).forEach(slug => {
+  const opt = document.createElement('option');
+  opt.value = slug; opt.textContent = LABELS[slug];
+  docTypeSelect.appendChild(opt);
+});
+
+/* ---------- Theme ---------- */
+const themeToggle = document.getElementById('themeToggle');
+function applyTheme(t){ document.documentElement.setAttribute('data-theme', t); }
+try {
+  const savedTheme = localStorage.getItem('flagstone_theme');
+  if (savedTheme) applyTheme(savedTheme);
+} catch(e){}
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') ||
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  try { localStorage.setItem('flagstone_theme', next); } catch(e){}
+});
+
+/* ---------- Sidebar (mobile) ---------- */
+const sidebar = document.getElementById('sidebar');
+const scrim = document.getElementById('scrim');
+document.getElementById('menuBtn').addEventListener('click', () => { sidebar.classList.add('open'); scrim.classList.add('show'); });
+scrim.addEventListener('click', () => { sidebar.classList.remove('open'); scrim.classList.remove('show'); });
+
+/* ---------- Access code persistence ---------- */
+const codeInput = document.getElementById('accessCode');
+const rememberCheckbox = document.getElementById('rememberCode');
+try {
+  const saved = localStorage.getItem('flagstone_access_code');
+  if (saved) { codeInput.value = saved; rememberCheckbox.checked = true; }
+} catch(e){}
+rememberCheckbox.addEventListener('change', () => {
+  try {
+    if (rememberCheckbox.checked) localStorage.setItem('flagstone_access_code', codeInput.value);
+    else localStorage.removeItem('flagstone_access_code');
+  } catch(e){}
+});
+codeInput.addEventListener('input', () => {
+  try { if (rememberCheckbox.checked) localStorage.setItem('flagstone_access_code', codeInput.value); } catch(e){}
+});
+
+/* ---------- History (local only) ---------- */
+function loadHistory(){ try { return JSON.parse(localStorage.getItem('flagstone_history_v2') || '[]'); } catch(e){ return []; } }
+function saveHistory(list){ try { localStorage.setItem('flagstone_history_v2', JSON.stringify(list.slice(0,30))); } catch(e){} }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderHistory(){
+  const h = loadHistory();
+  const el = document.getElementById('historyList');
+  if (!h.length){ el.innerHTML = '<div class="history-empty">No reviews yet.</div>'; return; }
+  el.innerHTML = h.map((item, i) => `
+    <div class="history-item" data-idx="${i}">
+      <div class="h-top"><span>${escapeHtml(item.label || '(untitled)')}</span></div>
+      <div class="h-sub">${new Date(item.ts).toLocaleString()} &middot; ${LABELS[item.docType] || item.docType}</div>
+    </div>`).join('');
+  el.querySelectorAll('.history-item').forEach(node => {
+    node.addEventListener('click', () => {
+      const item = loadHistory()[parseInt(node.dataset.idx, 10)];
+      if (item) resumeConversation(item);
+    });
+  });
+}
+renderHistory();
+
+/* ---------- Conversation state ---------- */
+let conversation = [];      // [{role:'user'|'model', apiText, displayText, isDocument}]
+let activeDocType = docTypeSelect.value;
+let activeLabel = null;
+let activeHistoryIndex = null;
+let stagedDoc = null;       // {name, text}
+
+function resumeConversation(item){
+  conversation = item.messages || [];
+  activeDocType = item.docType;
+  docTypeSelect.value = item.docType;
+  activeLabel = item.label;
+  activeHistoryIndex = loadHistory().findIndex(h => h.ts === item.ts);
+  renderThread();
+}
+
+function persistConversation(){
+  const h = loadHistory();
+  const record = { ts: (h[activeHistoryIndex] && h[activeHistoryIndex].ts) || Date.now(), docType: activeDocType, label: activeLabel, messages: conversation };
+  if (activeHistoryIndex !== null && h[activeHistoryIndex]) {
+    h[activeHistoryIndex] = record;
+  } else {
+    h.unshift(record);
+    activeHistoryIndex = 0;
+  }
+  saveHistory(h);
+  renderHistory();
+}
+
+document.getElementById('newChatBtn').addEventListener('click', () => {
+  conversation = []; activeLabel = null; activeHistoryIndex = null; stagedDoc = null;
+  activeDocType = docTypeSelect.value;
+  renderChip(); renderThread();
+});
+docTypeSelect.addEventListener('change', () => { if (!conversation.length) activeDocType = docTypeSelect.value; });
+
+/* ---------- File attach ---------- */
+const attachBtn = document.getElementById('attachBtn');
+const fileInput = document.getElementById('fileInput');
+attachBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => { stagedDoc = { name: f.name, text: e.target.result }; renderChip(); };
+  reader.readAsText(f);
+});
+function renderChip(){
+  const row = document.getElementById('chipRow');
+  if (!stagedDoc) { row.className = 'composer-chip-row'; row.innerHTML = ''; return; }
+  row.className = 'composer-chip-row show';
+  row.innerHTML = `<div class="doc-chip">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+    <span>${escapeHtml(stagedDoc.name)} &mdash; ${stagedDoc.text.length.toLocaleString()} characters</span>
+    <button class="doc-toggle" id="clearChip" style="margin-left:auto;">Remove</button>
+  </div>`;
+  document.getElementById('clearChip').addEventListener('click', () => { stagedDoc = null; renderChip(); });
+}
+
+/* ---------- Rendering ---------- */
+function formatModelText(raw){
+  let t = escapeHtml(raw);
+  t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/^(SUMMARY|FLAGGED CLAUSES.*|DISCLAIMER)\s*$/gim, '<h3>$1</h3>');
+  t = t.replace(/Severity:\s*(High|Medium|Low)/gi, (m, lvl) => `Severity: <span class="sev sev-${lvl.toLowerCase()}">${lvl}</span>`);
+  t = t.replace(/&quot;(.*?)&quot;/g, '<span class="quote">&quot;$1&quot;</span>');
+  // turn consecutive "- " lines into a list
+  t = t.replace(/(?:^|\n)((?:- .*(?:\n|$))+)/g, (m, block) => {
+    const items = block.trim().split('\n').map(l => `<li>${l.replace(/^- /, '')}</li>`).join('');
+    return '\n<ul>' + items + '</ul>\n';
+  });
+  t = t.replace(/\n{2,}/g, '\n\n');
+  return t;
+}
+
+function renderThread(){
+  const inner = document.getElementById('threadInner');
+  if (!conversation.length){
+    inner.innerHTML = `<div class="empty-state" id="emptyState">
+      <svg class="es-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h5"/></svg>
+      <h2>Start a review</h2>
+      <p>Pick a document type on the left, then paste or attach a document below. Ask follow-up questions afterwards &mdash; it's a conversation.</p>
+    </div>`;
+    return;
+  }
+  inner.innerHTML = conversation.map((m, idx) => {
+    if (m.role === 'user') {
+      if (m.isDocument) {
+        const previewId = 'prev' + idx;
+        return `<div class="msg-row user"><div class="bubble user">
+          <div class="doc-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+          <span>Document attached &mdash; ${m.charCount.toLocaleString()} characters</span></div>
+          ${m.note ? `<div class="msg-text">${escapeHtml(m.note)}</div>` : ''}
+          <button class="doc-toggle" onclick="document.getElementById('${previewId}').classList.toggle('expanded'); this.textContent = this.textContent.startsWith('Show') ? 'Hide document text' : 'Show document text';">Show document text</button>
+          <div class="doc-preview" id="${previewId}">${escapeHtml(m.docText)}</div>
+        </div></div>`;
+      }
+      return `<div class="msg-row user"><div class="bubble user"><div class="msg-text">${escapeHtml(m.displayText)}</div></div></div>`;
+    }
+    if (m.pending) {
+      return `<div class="msg-row model"><div class="bubble model"><div class="typing"><span></span><span></span><span></span></div></div></div>`;
+    }
+    if (m.error) {
+      return `<div class="msg-row model"><div class="bubble model"><div class="err-text">${escapeHtml(m.displayText)}</div></div></div>`;
+    }
+    const metaLine = m.usage ? `<div class="meta-line">Input tokens: ${m.usage.promptTokenCount || '?'} &middot; Output tokens: ${m.usage.candidatesTokenCount || '?'}</div>` : '';
+    return `<div class="msg-row model"><div class="bubble model"><div class="msg-text">${formatModelText(m.displayText)}</div>${metaLine}</div></div>`;
+  }).join('');
+  document.getElementById('thread').scrollTop = document.getElementById('thread').scrollHeight;
+  composerInput.placeholder = conversation.length ? 'Ask a follow-up question...' : 'Paste or attach a document to begin...';
+}
+
+/* ---------- Sending ---------- */
+const composerInput = document.getElementById('composerInput');
+composerInput.addEventListener('input', () => {
+  composerInput.style.height = 'auto';
+  composerInput.style.height = Math.min(composerInput.scrollHeight, 160) + 'px';
+});
+composerInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
+const REVIEW_INSTRUCTION = 'Review the following document according to the skill instructions you were given. '
+  + 'Produce the SUMMARY and FLAGGED CLAUSES sections exactly as specified, then the disclaimer.\n\n'
+  + '=== DOCUMENT START ===\n{DOC}\n=== DOCUMENT END ===';
+
+async function sendMessage(){
+  const code = codeInput.value.trim();
+  const typed = composerInput.value.trim();
+  const sendBtn = document.getElementById('sendBtn');
+
+  if (!code) { alert('Enter the access code in the sidebar first.'); return; }
+  if (!typed && !stagedDoc) return;
+
+  const isFirstTurn = conversation.length === 0;
+  let userMsg;
+
+  if (stagedDoc || isFirstTurn) {
+    const docText = stagedDoc ? stagedDoc.text : typed;
+    const note = stagedDoc ? typed : '';
+    userMsg = {
+      role: 'user',
+      isDocument: true,
+      docText,
+      note,
+      charCount: docText.length,
+      apiText: REVIEW_INSTRUCTION.replace('{DOC}', docText) + (note ? ('\n\nAdditional note from reviewer: ' + note) : '')
+    };
+    activeDocType = docTypeSelect.value;
+    if (!activeLabel) activeLabel = (stagedDoc ? stagedDoc.name : LABELS[activeDocType]);
+  } else {
+    userMsg = { role: 'user', displayText: typed, apiText: typed };
+  }
+
+  conversation.push(userMsg);
+  stagedDoc = null; renderChip();
+  composerInput.value = ''; composerInput.style.height = 'auto';
+  const pendingMsg = { role: 'model', pending: true };
+  conversation.push(pendingMsg);
+  renderThread();
+  sendBtn.disabled = true;
+
+  try {
+    const resp = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accessCode: code,
+        docType: activeDocType,
+        messages: conversation.filter(m => !m.pending).map(m => ({ role: m.role, text: m.apiText || m.displayText }))
+      })
+    });
+    const data = await resp.json();
+    const idx = conversation.indexOf(pendingMsg);
+    if (!data.ok) {
+      conversation[idx] = { role: 'model', error: true, displayText: 'Error: ' + (data.error || ('HTTP ' + resp.status)) };
+    } else {
+      conversation[idx] = { role: 'model', displayText: data.reply, usage: data.usage };
+    }
+  } catch (err) {
+    const idx = conversation.indexOf(pendingMsg);
+    conversation[idx] = { role: 'model', error: true, displayText: 'Request failed: ' + err.message };
+  }
+  sendBtn.disabled = false;
+  renderThread();
+  persistConversation();
+}
+</script>
+</body>
+</html>
